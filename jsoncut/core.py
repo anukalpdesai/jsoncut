@@ -18,6 +18,7 @@ JSON Key definition:
         names.0.name.last
         names.2:5
 """
+import warnings
 from copy import deepcopy
 from functools import reduce
 from operator import getitem
@@ -252,7 +253,7 @@ def into_key(*keys, fullpath=False):
     return '.'.join(keys) if fullpath else keys[-1]
 
 
-def get_items(d, *keylists, fullpath=False, any=False, n=0):
+def get_items(d, *keylists, fullpath=False, any=True, n=0):
     """Get multiple nested items from a dict given the keys.
 
     Args:
@@ -260,7 +261,8 @@ def get_items(d, *keylists, fullpath=False, any=False, n=0):
         *keylists List[str]: JSON Keys (name, index or trailing slice)
         fullpath (bool): Use the full JSON Key path in the target name.
         any (bool): If True get any instance of the JSON Key value that
-            exists; otherwise raise KeyNotFound if the key is missing.
+            exists or issue user warning if key is missing or index out of range,
+            otherwise raise KeyNotFound if the key is missing.
         n (int): Data item number being processed; shown to user in
             exception handling.
 
@@ -268,10 +270,10 @@ def get_items(d, *keylists, fullpath=False, any=False, n=0):
         dict: All Key/Values in data referenced by JSON Keys
 
     Raises:
-        KeyNotFound: Only returned if 'any' option is not set.
+        KeyNotFound: Only returned if 'any' option is set to False.
         KeyTypeError: When trying to use a key on a Sequence
             or an index on a Mapping.
-        IndexOutOfRange: Only returned if 'any' option is not set.
+        IndexOutOfRange: Only returned if 'any' option is set to False.
 
     Examples:
         >>> d = {'k1': {'k2': 'item1'}, 'k3': 'item2'}
@@ -287,12 +289,15 @@ def get_items(d, *keylists, fullpath=False, any=False, n=0):
             into = into_key(*keylist, fullpath=fullpath)
             result[into] = select_key(d, *keylist, no_default=True)
         except exc.KeyNotFound as e:
+            warnings.warn("Missing key %s" % str(e))
             if not any:
                 kwds = dict(op='get', itemnum=n, data=d, keylist=keylists)
                 raise exc.KeyNotFound(e, **kwds)
         except exc.IndexOutOfRange as e:
-            kwds = dict(op='get', itemnum=n, data=d, keylist=keylists)
-            raise exc.IndexOutOfRange(e, **kwds)
+            warnings.warn("Index of of range %s" %str(e))
+            if not any:
+                kwds = dict(op='get', itemnum=n, data=d, keylist=keylists)
+                raise exc.IndexOutOfRange(e, **kwds)
         except exc.KeyTypeError as e:
             kwds = dict(op='get', itemnum=n, data=d, keylist=keylists)
             raise exc.KeyTypeError(e, **kwds)
