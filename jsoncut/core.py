@@ -289,15 +289,17 @@ def get_items(d, *keylists, fullpath=False, any=True, n=0):
             into = into_key(*keylist, fullpath=fullpath)
             result[into] = select_key(d, *keylist, no_default=True)
         except exc.KeyNotFound as e:
-            warnings.warn("Missing key %s" % str(e))
             if not any:
                 kwds = dict(op='get', itemnum=n, data=d, keylist=keylists)
                 raise exc.KeyNotFound(e, **kwds)
+            else:
+                warnings.warn("Missing key %s" % str(e))
         except exc.IndexOutOfRange as e:
-            warnings.warn("Index of of range %s" %str(e))
             if not any:
                 kwds = dict(op='get', itemnum=n, data=d, keylist=keylists)
                 raise exc.IndexOutOfRange(e, **kwds)
+            else:
+                warnings.warn("Index of of range %s" %str(e))
         except exc.KeyTypeError as e:
             kwds = dict(op='get', itemnum=n, data=d, keylist=keylists)
             raise exc.KeyTypeError(e, **kwds)
