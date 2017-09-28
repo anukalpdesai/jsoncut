@@ -1,5 +1,7 @@
 """Test JSON Cut main functions."""
 import jsoncut.core
+import pytest
+import warnings
 
 TEST_DATA = {
     'info': 'test',
@@ -45,3 +47,18 @@ def test_cut():
     result = jsoncut.core.cut(TEST_DATA, rootkey=rootkey, getkeys=getkeys,
                               delkeys=delkeys)
     assert result == PRUNED_TEST_DATA
+
+def test_get_items_warnings(capsys):
+    """ Test core.get_items issues UserWarning for missing key"""
+    
+    args = TEST_DATA, 'results', 'info1'
+    kwargs = {'fullpath': True}
+    with pytest.warns(UserWarning) as w:
+        jsoncut.core.get_items(TEST_DATA, ['result'], ['info'], fullpath=True)
+
+    with open(r'/home/anukalp/py_o', 'w') as fd:
+        fd.write(str(type(w[0])))
+        fd.write(str(type(w[0].message)))
+        fd.write(str(len(w[0].message.args)))
+
+    assert w[0].message.args[0] == 'Missing key "\'result\'"' 
